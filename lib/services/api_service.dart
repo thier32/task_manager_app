@@ -29,13 +29,15 @@ class ApiService {
         if (_token != null && _token!.isNotEmpty)
           'Authorization': 'Bearer $_token',      
   };
+  static Uri getUrl(String endpoint){
+    final url = Uri.parse('$baseUrl${endpoint.startsWith('/') ? '' : '/'}$endpoint');
+    debugPrint('URL: $url');
+    return url;
+  }
 
   // --- Méthode POST universelle ---
   static Future<dynamic> post(String endpoint,{dynamic bodyData}) async {
-    final url = Uri.parse('$baseUrl${endpoint.startsWith('/') ? '' : '/'}$endpoint');
-    debugPrint('POST URL: $url'); // Utile pour vérifier l'URL exacte dans la console
-    //debugPrint('POST BODY: $bodyData'); // Utile pour vérifier l'URL exacte dans la console
-    //debugPrint(url);
+    final url = getUrl(endpoint);
     final response = await http.post(
       url,
       headers: _headers,
@@ -85,7 +87,7 @@ class ApiService {
 
   // --- Méthode GET universelle ---
   static Future<dynamic> get(String endpoint,{dynamic bodyData}) async {
-    final url = Uri.parse('$baseUrl/$endpoint');
+    final url = getUrl(endpoint);
 
     final response = await http.get(
       url,
@@ -95,13 +97,12 @@ class ApiService {
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception('Erreur HTTP (${response.statusCode}) : ${getMessage(response)}');
     }
-    return response;
+    return getResult(response);
   }
 
   // --- Méthode GET universelle ---
   static Future<dynamic> delete(String endpoint,{dynamic bodyData}) async {
-    final url = Uri.parse('$baseUrl/$endpoint');
-
+    final url = getUrl(endpoint);
     final response = await http.delete(
       url,
       headers: _headers
@@ -113,17 +114,6 @@ class ApiService {
     return response;
   }
 
-  // GET : Récupérer toutes les tâches
-  static Future<List<Tache>> getTaches() async {
-    final response = await http.get(Uri.parse(baseUrl));
-    final Map<String, dynamic> decodedData = json.decode(response.body);
-    if (response.statusCode == 200) {
-      Iterable data = decodedData['data']['result']['rows'];
-      return data.map((json) => Tache().fromJson(json)).toList();
-    } else {
-      throw Exception('Erreur lors du chargement des tâches');
-    }
-  }
 
   // POST : Ajouter une tâche
   static Future<void> ajouterTache(Tache tache) async {

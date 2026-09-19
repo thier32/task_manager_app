@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:task_manager_app/models/tache.dart';
 import 'package:task_manager_app/pages/login_page.dart';
 import 'package:task_manager_app/services/api_service.dart';
+import 'package:task_manager_app/services/api_tache_service.dart';
 import 'package:task_manager_app/widgets/tache_form.dart';
 import 'package:task_manager_app/widgets/tache_grid.dart';
 
@@ -15,6 +16,36 @@ class PageAccueilTaches extends StatefulWidget {
 class _PageAccueilTachesState extends State<PageAccueilTaches> {
   final List<Tache> _taches = [];
   String _filtreTexte = '';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _chargerTaches();
+  }
+
+  Future<void> _chargerTaches() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final tachesServeur = await ApiTacheService.getTaches();
+      setState(() {
+        _taches.clear();
+        _taches.addAll(tachesServeur);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : ${e.toString()}'), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   List<Tache> get _tachesFiltrees {
     if (_filtreTexte.isEmpty) {
@@ -34,14 +65,32 @@ class _PageAccueilTachesState extends State<PageAccueilTaches> {
       );              
   }
 
-  void _soumettreTache(Tache tache, {int? index}) {
+  Future<void> _soumettreTache(Tache tache, {int? index}) async {
     setState(() {
-      if (index == null) {
-        _taches.add(tache); // Mode Ajout
-      } else {
-        _taches[index] = tache; // Mode Édition
-      }
+      _isLoading = true;
     });
+  
+    try {
+      if (index == null) {
+         await ApiTacheService.enregistrerTache(tache);
+      } else {
+         await ApiTacheService.enregistrerTache(tache);
+      }
+      await _chargerTaches();
+      
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de l\'enregistrement : ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _supprimerTache(int index) {
@@ -49,6 +98,8 @@ class _PageAccueilTachesState extends State<PageAccueilTaches> {
       _taches.removeAt(index);
     });
   }
+
+
 
   void _confirmerSuppression(BuildContext context, int index) {
     showDialog(
@@ -116,11 +167,14 @@ class _PageAccueilTachesState extends State<PageAccueilTaches> {
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.black54),
               tooltip: 'Se déconnecter',
-              onPressed: () => _onDeconnexion,
+              onPressed: _onDeconnexion
             ),
           ],
         ),
-        body: Column(
+        body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(), // Affiche le loader pendant le chargement
+            ) : Column(
           children: [
             // Barre de recherche fixe en haut pour toutes les vues
             Padding(

@@ -3,15 +3,17 @@ import 'package:task_manager_app/utils/reflector.dart';
 
 @reflector
 class UserRegisterDto extends BaseModel<UserRegisterDto> {
-  String username;
-  String email;
-  String password;
-  String confirmPassword;
+  String? username;
+  String? email;
+  String? password;
+  String? confirmPassword;
+  String? name;
 
   UserRegisterDto({
-    required this.username,
-    required this.email,
-    required this.password,
-    required this.confirmPassword,
+    this.username,
+    this.email,
+    this.password,
+    this.confirmPassword,
+    this.name,
   });
 }

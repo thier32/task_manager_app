@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:task_manager_app/dto/user_register_dto.dart';
 import 'package:task_manager_app/pages/login_page.dart';
+import 'package:task_manager_app/services/api_user_service.dart';
 import 'home_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -12,6 +14,7 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   // 1. Separate controllers for each field
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();  
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -20,10 +23,14 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  bool isLoading = false;
+  String? errorMessage;
+
   void _inscrire() {
     if (_usernameController.text.trim().isEmpty ||
         _emailController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty ||
+        _nameController.text.trim().isEmpty ||
         _confirmPasswordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez remplir tous les champs')),
@@ -40,9 +47,64 @@ class _RegisterPageState extends State<RegisterPage> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const PageAccueilTaches()),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
+
+   
+
+   Future<void> _register() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+     if (_usernameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty ||
+        _nameController.text.trim().isEmpty ||
+        _confirmPasswordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez remplir tous les champs')),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Les mots de passe ne correspondent pas')),
+      );
+      return;
+    }
+
+
+    try{
+        UserRegisterDto userRegisterDto = UserRegisterDto(
+          username: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          confirmPassword: _confirmPasswordController.text.trim(),
+          email: _emailController.text.trim(),
+          name: _nameController.text.trim(),
+        );
+        
+        await ApiUserService.enregistrerUtilisateur(userRegisterDto);  
+        
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }  
+  }
+
 
   @override
   void dispose() {
@@ -76,7 +138,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                
+                // Champ Name (Fixed controller)
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Noms',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 15),             
                 // Champ Username (Fixed controller)
                 TextField(
                   controller: _usernameController,
@@ -147,7 +218,12 @@ class _RegisterPageState extends State<RegisterPage> {
                 SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: ElevatedButton(
+                  child: isLoading ? 
+                    const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ) : ElevatedButton(
                     onPressed: _inscrire,
                     child: const Text(
                       'S\'inscrire',

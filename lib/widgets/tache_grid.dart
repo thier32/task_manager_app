@@ -27,14 +27,8 @@ class TacheGrid extends StatelessWidget {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // 2 cartes côte à côte
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 13,
-        childAspectRatio: 1.2, // Format carré        
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),     
       itemCount: taches.length,
       itemBuilder: (context, index) {
         final tache = taches[index];
